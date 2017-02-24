@@ -1,0 +1,215 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="./lib/mine/caHelperFunctions.js"></script>
+    <script type="text/javascript" src="./lib/d3/d3.js"></script>
+    <!-- Bootstrap -->
+	    <!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <style> 
+    #map {
+        height: 72%;
+        width: 52%;
+        position: absolute;
+        top: 40px;
+        right: 4px;
+      }
+      </style>
+</head>
+<body>
+	<!-- Google location lookup -->
+	<div id="lookup" style="width: 45%; height: 20%;" class="form-group"> 
+		<legend style="padding-left: 8px;">Lookup location using Google Maps API</legend>
+	  	<label class="col-md-4 control-label" for="location">location</label>  
+	  	<div class="col-md-8">
+	  		<input id="location" name="location" type="text" class="form-control input-md">
+	  		<span class="help-block">Enter location using City, State or City, Country</span>  
+	  	</div>
+		<!-- Button -->
+		<div class="form-group">
+		  <label class="col-md-4 control-label" for="Submit"></label>
+		  <div class="col-md-4">
+		    <button id="Submit" name="Submit" class="btn btn-primary" onclick="googleLookup()">Search Google</button>
+		  </div>
+		</div>
+	</div>
+	<!-- Google Map div -->
+	<div id="map"></div>
+	<!-- Geo-location Details -->
+	<div id="myForm" style="width: 45%; height: 30%;" class="form-group">
+		<legend style="padding-left: 8px;padding-top: 16px"><br>Geo-Location Details</legend>
+	  	<label class="col-md-4 control-label" for="longitude">Longitude</label>  
+  		<div class="col-md-8">
+  			<input id="longitude" name="longitude" type="text" class="form-control input-md">
+  			<span class="help-block">Range: -180 to 180</span>  
+  		</div>
+  		<label class="col-md-4 control-label" for="latitude">Latitude</label>  
+  		<div class="col-md-8">
+  			<input id="latitude" name="latitude" type="text" class="form-control input-md">
+  			<span class="help-block">Range: -90 to 90</span>  
+  		</div>
+  		<label class="col-md-4 control-label" for="latitude">Location Description</label>  
+  		<div class="col-md-8">
+  			<input id="locationDesc" name="locationDesc" type="text" class="form-control input-md">
+  			<span class="help-block">City, State or City, Country</span>  
+  		</div>
+  		<div class="form-group">
+ 	 		<label class="col-md-4 control-label" for="Submit"></label>
+  			<div class="col-md-6">
+	    		<button id="Submit" name="Submit" class="btn btn-success" onclick="setLocationInfo()">Save Device Location</button>
+	  		</div>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+
+	var deviceID=getQueryVariable('deviceID');
+	var deviceAttrs;
+	var existingLat="", existingLong="", existingLocationDescr="";
+	getExistingValues();
+
+
+	if (deviceID) {
+		console.log("Device ID passed: " + deviceID);
+	} 
+
+	else {
+		alert("Interface ID (interfaceID) or Device ID (deviceID) is required.")
+	}
+
+	function getExistingValues() {
+
+		var url="/pc/odata/api/devices(" + deviceID + ")?$select=Longitude,Latitude,LocationDesc&$format=text/csv"
+		d3.csv(url, function (error, data){
+			deviceAttrs=data;
+			checkValues(deviceAttrs);
+		})
+
+	}
+
+	function checkValues(attributes) {
+		if (attributes[0].Longitude) {
+			document.getElementById('longitude').value=Number(attributes[0].Longitude);
+		}
+		if (attributes[0].Latitude) {
+			document.getElementById('latitude').value=Number(attributes[0].Latitude);
+		}
+		if (attributes[0].Latitude && attributes[0].Longitude) {
+			mapResults(Number(attributes[0].Longitude),Number(attributes[0].Latitude));
+
+		}
+		if (attributes[0].LocationDesc) {
+			document.getElementById('locationDesc').value=attributes[0].LocationDesc;
+			mapResults(Number(attributes[0].Longitude),Number(attributes[0].Latitude));
+		}
+	}
+
+	function googleLookup () {
+		var lookupLocation=$('#location').val()
+		console.log("Looking up location: " + lookupLocation)
+		var geocoder =  new google.maps.Geocoder();
+    	geocoder.geocode( { 'address': lookupLocation}, function(results, status) {
+          	if (status == google.maps.GeocoderStatus.OK) {
+          		console.log("Results: " + results)
+          		var googleLong=results[0].geometry.location.lng().toFixed(4);
+          		var googleLat=results[0].geometry.location.lat().toFixed(4);
+          		var locationDesc;
+          		if (results[0].types == "street_address") {
+          			locationDesc=results[0].address_components[2].short_name + ", " +
+          						 results[0].address_components[4].short_name;
+          		}
+          		else if (results[0].types[0] == "locality") {
+          			locationDesc=results[0].address_components[0].short_name + ", " +
+          						 results[0].address_components[2].short_name;
+          		}
+          		else {
+          			locationDesc=lookupLocation;
+          		}
+          		document.getElementById('longitude').value=googleLong;
+          		document.getElementById('latitude').value=googleLat;
+          		document.getElementById('locationDesc').value=locationDesc;
+            	console.log("location : " + results[0].geometry.location.lat() + " " +results[0].geometry.location.lng()); 
+            	mapResults(results[0].geometry.location.lng(), results[0].geometry.location.lat());
+          	} else {
+          		console.log("Results: " + results)
+            	alert("Unable to find location " + lookupLocation);
+          	}
+        });
+	}
+
+	function mapResults (long,lat) {
+		console.log("Calling map");
+		var map;
+      	function initialize() {
+        	var mapOptions = {zoom: 12,center: {lat: lat, lng: long},  }
+          	map = new google.maps.Map(document.getElementById('map'),mapOptions)
+        }
+       
+        google.maps.event.addDomListener(window, 'load', initialize());
+
+        var marker = new google.maps.Marker({
+          // The below line is equivalent to writing:
+          // position: new google.maps.LatLng(-34.397, 150.644)
+          position: {lat: lat, lng: long},
+          map: map
+        });
+        console.log("Marker: " + marker)
+    }
+
+	function setLocationInfo () {
+		var longitude=$('#longitude').val();
+		var latitude=$('#latitude').val();
+		var locDesc=$('#locationDesc').val();
+
+		console.log("Args Passed: " + longitude + "," + latitude + "," + locDesc);
+
+		var thisUrl="/pc/da/rest/devices/" + deviceID;
+		var xmlPayload='<Device version="1.0.0">\n' +
+  							'<Longitude>' + longitude + '</Longitude>\n' +
+ 							'<Latitude>' + latitude + '</Latitude>\n' +
+  							'<Elevation>0</Elevation>\n' +
+  							'<LocationDesc>' + locDesc + '</LocationDesc>\n' +
+						'</Device>';
+		console.log("PUT Url: " + thisUrl);
+		console.log("XML Payload: " + xmlPayload)
+		
+		function checkData () {
+			console.log("checking data validity");
+			if ( (longitude) && (latitude) && (longitude >= -180) && (longitude <= 180) 
+				&& (latitude >= -90) && (latitude <= 90)) {
+				return true;
+			}
+			else {
+				alert("Invalid longitude and latitude range.")
+				return false;
+			} 
+		
+
+		}
+		if (checkData()) {
+			console.log("Data checks out!");
+			$.ajax({
+			  url: thisUrl,
+			  type: 'PUT',
+			  contentType: "application/xml",
+			  data: xmlPayload,
+			  success: function(data) {
+			    alert('Attributes succesfully set.\n'+
+			    		'Please wait for next sync process to view in CAPC or ETL OpenAPI job.');
+			  },
+			   error:function(data){
+		            alert("Failure: " + data.statusText);
+		        }
+			});
+		}				
+
+	}
+	</script>
+
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA80oKThoQAbaT8eoomooGiv2NrCuT3vOw"></script>
+</body>
