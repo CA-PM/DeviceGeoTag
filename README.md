@@ -1,61 +1,29 @@
-# BusyTimes
-A set of charts which displays the overall volume of an interface, device, or group for the specified metric family and metric. 
-The data is bucketized and displayed in aggregate (sum) based on the:
-	* Hour of Day (0-24)
-	* Day of Week (Sunday - Saturday)
-	* Day of Month (1-31)
+# Device Geo-Tag
+
+Easily add Geo-location data (longitude, latitude, elevation, description) to CAPM Managed Devices right from within CAPC Context Pages
 
 ![](./screenShot.jpg?raw=true "Example Screenshot")
 
 ##Installation Instructions:
 
-1. Copy app to user app directory on CAPC (/opt/CA/PerformanceCenter/PC/webapps/pc/apps/user)
-2. Modify/Add a view to a dashboard (for group context) or a context page (interface, device)
-3. Add browser view(s) with height of 700
-4. Add URL to app location with key parameters defined (see below)
+Requires CAPM 3.1
 
-###CAPC Browser view sample URL:
+1. Deploy the App to CAPC using the new App Deployment feature in CAPM 3.1
+2. Navigate to a Device context page and add a new section and App View
+3. Select the GeoTag app from within the drop-down
+4. Save the view
 
-This example would be placed on an interface context page to view the bucketized Errors metric to understand when errors are most frequently occuring for the given interface:
 
-/pc/apps/user/BusyTime/index.html?interfaceID={ItemIdDA}&startTime={TimeStartUTC}&endTime={TimeEndUTC}&metricFamily=portmfs&metric=im_Errors
+## Usage Instructions
+1. Enter a location in the search field and select lookup
+2. Validate the appropriate location is marked on the map
+3. Validate the longitude, latitude, and description information are accurate and modify the text as needed
+4. Save Device Location information
 
-###Key URL parameters:
+### Notes
 
-<table>
-    <tr>
-        <td>Parameter</td>
-        <td>Description</td>
-    </tr>
-    <tr>
-    	<td>interfaceID</td>
-    	<td>The ID of the interface for the given context page</td>
-    </tr>
-    <tr>
-    	<td>deviceID</td>
-    	<td>The ID of the device for the given context page</td>
-    </tr>
-    <tr>
-    	<td>groupID</td>
-    	<td>The ID of the group for the given Dashboard</td>
-    </tr>
-    <tr>
-    	<td>metricFamily</td>
-    	<td>The OpenAPI ID for the targetted Metric Family (see QueryBuilder for MF names)</td>
-    </tr>
-        <tr>
-    	<td>metric</td>
-    	<td>The OpenAPI name for the desired metric (see QueryBuilder for metric names</td>
-    </tr>
-        <tr>
-    	<td>startTime</td>
-    	<td>The start time (UNIX Epoch time) from the CAPC Time selector</td>
-    </tr>
-        <tr>
-    	<td>endTime</td>
-    	<td>The end time (UNIX Epoch time) from the CAPC Time selector</td>
-    </tr>
-</table>
+1. The Geo-location data will be available within CAPC after the next sync cycle.
+2. The Geo-location data will be available within the OpenAPI after the next ETL job 
 
 
 ===================================================================================
